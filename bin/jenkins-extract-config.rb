@@ -15,6 +15,8 @@ include FileUtils
 # Initialize the logger
 @logger = StackUtil::Logger.instance
 
+include FileUtils
+
 # Set up CLI inputs
 class ExtractionCLI
   include Mixlib::CLI

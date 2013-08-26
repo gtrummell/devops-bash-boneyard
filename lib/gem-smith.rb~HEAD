@@ -1,4 +1,4 @@
-require "pp"
+require 'pp'
 
 class GemSmith
   # Initialize the class object.
@@ -27,22 +27,22 @@ class GemSmith
         # Only include lines that call a gem with "gem" or "require".  Skip lines that don't.
         line_array = []
         (line.match(/^require ["']/) || line.match(/^gem ["']/)) ?
-            line_array << line.gsub(/:.*/, "").gsub(/[",]/, "").split(" ") :
+            line_array << line.gsub(/:.*/, '').gsub(/[",]/, '').split(' ') :
             next
         line_array.flatten!
 
         # Extract the gem name from the array.
         (line_array[1] == /^[.\/\w]/) ?
-          gem = (File.basename(File.expand_path(line_array[1]))).gsub(/-\d+\.*/, "") :
-          gem = line_array[1].gsub(/\//, "-")
+            gem = (File.basename(File.expand_path(line_array[1]))).gsub(/-\d+\.*/, '') :
+            gem = line_array[1].gsub(/\//, '-')
 
         # Extract the version number from the array
         line_array.include?(/[><!=]/) ?
-          version = line_array[2] :
-          version = ""
+            version = line_array[2] :
+            version = ''
 
         # Append a new hash to the file_gemlines array containing filename, gem, and version.
-        file_gemlines << { filename: file, gem: gem, version: version }
+        file_gemlines << {filename: file, gem: gem, version: version}
       end
       # Put this file's results into the global variable, @gemlines.
       file_gemlines.each do |file_gemline|
@@ -56,7 +56,7 @@ class GemSmith
   def list_required
     files = []
     @gemlines.each do |gemline|
-      files << gemline[:gem] if File.basename(gemline[:filename]) == "Gemfile"
+      files << gemline[:gem] if File.basename(gemline[:filename]) == 'Gemfile'
     end
     files.uniq.sort
   end
@@ -64,7 +64,7 @@ class GemSmith
   def list_gemfile
     files = []
     @gemlines.each do |gemline|
-      files << gemline[:gem] if File.basename(gemline[:filename]) != "Gemfile"
+      files << gemline[:gem] if File.basename(gemline[:filename]) != 'Gemfile'
     end
     files.uniq.sort
   end

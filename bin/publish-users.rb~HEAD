@@ -19,11 +19,11 @@
 
 
 # Require gems
-require "chef/config"
-require "chef/data_bag_item"
-require "mixlib/cli"
-require "rubygems"
-require "json"
+require 'chef/config'
+require 'chef/data_bag_item'
+require 'mixlib/cli'
+require 'rubygems'
+require 'json'
 
 
 # Set up CLI inputs
@@ -31,37 +31,39 @@ class CLI
   include Mixlib::CLI
 
   # Check for and if necessary set the current workspace
-  if ENV["WORKSPACE"].nil?
-    workspace = File.join(".")
-  elsif File.directory?(ENV["WORKSPACE"])
-    workspace = ENV["WORKSPACE"]
+  if ENV['WORKSPACE'].nil?
+    workspace = File.join('.')
+  elsif File.directory?(ENV['WORKSPACE'])
+    workspace = ENV['WORKSPACE']
+  else
+    raise('Workspace error!')
   end
 
   option :data_bag,
-         :short => "-d PATH",
-         :long => "--data-bag PATH",
-         :description => "Filename or Directory path to the data bag(s) to update",
-         :default => File.join(workspace, "config", "chef", "data_bags", "users"),
+         :short => '-d PATH',
+         :long => '--data-bag PATH',
+         :description => 'Filename or Directory path to the data bag(s) to update',
+         :default => File.join(workspace, 'config', 'chef', 'data_bags', 'users'),
          :required => false
 
   option :knife_config,
-         :short => "-c PATH",
-         :long => "--knife-config PATH",
-         :description => "Knife configuration file",
-         :default => File.join(workspace, "tools", "jenkins", "chefconfig", "knife.rb"),
+         :short => '-c PATH',
+         :long => '--knife-config PATH',
+         :description => 'Knife configuration file',
+         :default => File.join(workspace, 'tools', 'jenkins', 'chefconfig', 'knife.rb'),
          :required => true
 
   option :verbose,
-         :short => "-v",
-         :long => "--verbose",
-         :description => "Run verbosely",
+         :short => '-v',
+         :long => '--verbose',
+         :description => 'Run verbosely',
          :boolean => true,
          :required => false
 
   option :help,
-         :short => "-h",
-         :long => "--help",
-         :description => "Show this message",
+         :short => '-h',
+         :long => '--help',
+         :description => 'Show this message',
          :on => :tail,
          :boolean => true,
          :show_options => true,
@@ -83,14 +85,14 @@ verbose = cli.config[:verbose]
 
 
 # Read in the knife configuration from file. Quit if we can"t find one.
-raise("No knife configuration specified!") if knife_config.nil?
+raise('No knife configuration specified!') if knife_config.nil?
 puts("Using knife configuration file at #{knife_config}") if verbose
 Chef::Config.from_file(knife_config)
 
 
 # Test the data bag path to make sure it is file or directory. Quit if it"s not a valid path.
 # Quit if we don"t get a data bag path.
-raise("No data bag path specified.") if data_bag.nil?
+raise('No data bag path specified.') if data_bag.nil?
 puts("Using data bag path #{data_bag}") if verbose
 
 if File.directory?(data_bag)
@@ -99,11 +101,11 @@ elsif File.file?(data_bag)
   upload_list = []
   upload_list << data_bag
 else
-  raise("Data bag path is not an existing file or directory.")
+  raise('Data bag path is not an existing file or directory.')
 end
 
 if verbose
-  puts("Using data bags from files:")
+  puts('Using data bags from files:')
   upload_list.each do |item|
     puts item
   end
@@ -112,12 +114,12 @@ end
 
 # Make sure the users data bag exists
 #noinspection RubyResolve
-if Chef::DataBag.load("users")
-  puts("Users data bag exists") if verbose
+if Chef::DataBag.load('users')
+  puts('Users data bag exists') if verbose
 else
-  puts("Creating users data bag") if verbose
+  puts('Creating users data bag') if verbose
   users_data_bag = Chef::DataBag.new
-  users_data_bag.name("users")
+  users_data_bag.name('users')
   users_data_bag.create
 end
 
@@ -128,7 +130,7 @@ upload_list.each do |item|
   if JSON.parse(IO.read(item))
     puts("Validated JSON and uploading data bag #{item}") if verbose
     data_bag_item = Chef::DataBagItem.new
-    data_bag_item.data_bag("auth")
+    data_bag_item.data_bag('auth')
     data_bag_item.raw_data = JSON.parse(IO.read(item))
     data_bag_item.save
   else

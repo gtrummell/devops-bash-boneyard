@@ -1,4 +1,4 @@
 scripts
 =======
 
-Ruby and bash utility scripts for DevOps tasks
+Simple Ruby, Python and Bash utility scripts for DevOps tasks
