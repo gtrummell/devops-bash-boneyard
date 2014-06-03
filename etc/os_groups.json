@@ -1,0 +1,52 @@
+{
+  "whisper_base": {
+    "sudo": {
+      "security_env": {
+        "default": "poc",
+        "environments": {
+          "prod": [ "whisper-ops",  "whisper-support" ],
+          "dev": [ "admin", "stormadmin", "whisper-dev", "whisper-ops", "whisper-qa", "whisper-support", "whisper-se" ],
+          "poc": [ "whisper-dev", "whisper-qa", "whisper-ops", "whisper-support", "whisper-se" ]
+        }
+      },
+      "groups": [
+        {
+          "name": "admin",
+          "gid": 1003,
+          "nopasswd": true,
+          "cmnd_aliases": "ALL"
+        },
+        {
+          "name": "stormadmin",
+          "gid": 1004,
+          "nopasswd": true,
+          "cmnd_aliases": "ALL"
+        },
+        {
+          "name": "whisper-dev",
+          "gid": 3010,
+          "nopasswd": true,
+          "cmnd_aliases": "ALL"
+        },
+        {
+          "name": "whisper-ops",
+          "gid": 3020,
+          "nopasswd": true,
+          "cmnd_aliases": "ALL"
+        },
+        {
+          "name": "whisper-qa",
+          "gid": 3011,
+          "nopasswd": true,
+          "cmnd_aliases": "ALL"
+        },
+        {
+          "name": "whisper-support",
+          "gid": 3021,
+          "nopasswd": true,
+          "cmnd_aliases": "ALL"
+        }
+      ]
+    }
+  }
+}

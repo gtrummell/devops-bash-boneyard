@@ -1,0 +1,121 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "StackMakr Provisioning Definitions Schema",
+    "version": "SEC-000-YYYYMMDDTHHMM-SR_0",
+    "description": "StackMakr Validation Schema for Stackmakr",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "The unique identifier for a product.",
+            "type": "string"
+        },
+        "attributes": {
+            "name": {
+                "description": "Friendly name for this configuration file.",
+                "type": "string",
+                "maxLength": "64",
+                "minLength": "2"
+            },
+            "stackid": {
+                "description": "Stack identifier, globally unique across the product, and suitable for use as a hostname.",
+                "type": "string",
+                "maxLength": "15",
+                "minLength": "2"
+            },
+            "customer_name": {
+                "description": "Full name of the customer.",
+                "type": "string",
+                "maxLength": "64",
+                "minLength": "2"
+            },
+            "domain_suffix": {
+                "description": "DNS domain name to be used with this stack.",
+                "type": "string",
+                "patternProperties": "^.*\..*$"
+            },
+            "ssh_keypair": "Name of the SSH keypair. The public key is provisioned on the instance, the private key is downloaded from repository.",
+            "repo_hostname": "Hostname of the central artifact repository.",
+            "zabbix_hostname": [ "Array of Zabbix hostnames." ],
+            "monitoring_hosts": [ "Array of Splunk indexers used to monitor this stack." ],
+            "cloud_vendor": {
+                "description": "Configuration options for the selected cloud vendor for this stack",
+                "type": "hash",
+                "items": {
+                    "name": "Name of vendor - types are locked.",
+                    "account": "Short name of the cloud vendor's account"
+                },
+                "TODO": "Keep writing the schema!"
+            },
+            "sec": {
+                "mgmt_port": 8089,
+                "licenser": {
+                    "license": "license_dev",
+                    "lb_hostname": "lb-licensemaster",
+                    "primary_hostname": "licensemaster",
+                    "standby_hostname": "licensestandby"
+                },
+                "search_head": {
+                    "lb_hostname": "lb-searchhead",
+                    "primary_hostname": "searchmaster",
+                    "standby_hostname": "searchstandby"
+                },
+                "clusters": {
+                    "cluster_0": {
+                        "master_hostname": "cluster0-master1",
+                        "cluster_id": 0,
+                        "replication_factor": 2,
+                        "search_factor": 1
+                    }
+                },
+                "indexers": {
+                    "s2s_port": 9997,
+                    "replication_port": 9887
+                },
+                "indexes": {
+                    "syslog": {
+                        "maxDataSize": "auto_high_volume",
+                        "maxHotIdleSecs": 86400,
+                        "maxHotBuckets": 3,
+                        "maxTotalDataSizeMB": 10000000,
+                        "maxConcurrentOptimizes": 6,
+                        "maxMemMB": 20,
+                        "homePath": "$SPLUNK_DB/hot/syslog/db",
+                        "coldPath": "$SPLUNK_DB/cold/syslog/colddb",
+                        "thawedPath": "$SPLUNK_DB/cold/syslog/thaweddb"
+                    }
+                },
+                "backup": {
+                    "encryption": {
+                        "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwYF2e4Y4gnMkbtc5nnyS\nQT1ahw6HY+l5K05k/OkeZbDFAV5Sh63SuWfJ/Zs79dY7aBU1y/vlWydNUVLOi2tS\nJnTdIl+DV3pV++RjEYbv8e2sWJRwzSUd4kJdrSFSeIZwm6M2DfHsPmZlYlj+Ueot\nsnpuA5OYSzgpu3mCC8kUIXgAUZ5nMHl46p3EuAPJ4AfHewFFWOFbnSOGZbBm1SsI\n+tc/icXOaUatHRFFcWDWUXumF47so1sKbN0GyaQCOKOJCUww7fEP/N4H6QZa8Nta\nigEmHuqm+UDf1VLBqGEYJUkTusartERRXuKdWrTCfwQnBwJ6j0sxIehDtRqH9TU+\n0QIDAQAB\n-----END PUBLIC KEY-----"
+                    }
+                }
+            },
+            "secureobj_override": {
+                "splunk_passwd": "none",
+                "splunk_license": "none",
+                "postfix_sasl_passwd": "none",
+                "splunk_web_certs": "none",
+                "os_ssl_certs": "none"
+            }
+        },
+        "build": {
+            "disposition": "keep",
+            "executor_pool": "Whisper-Prod",
+            "machine": "ec2",
+            "projects": [ "whisper" ],
+            "scm_branch": "master"
+        },
+        "compute": {
+            "lm1": {
+                "role": "license-master",
+                "dnsalias_pub": [ "license-master" ],
+                "reprovision": "allow",
+                "tags": {
+                    "License": "whisper-project-test"
+                }
+            }
+        }
+    },
+    "required": ["id", "attributes", "build", "compute"]
+}
+

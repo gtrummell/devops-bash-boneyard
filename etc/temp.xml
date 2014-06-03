@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<license>
+  <signature>
+    S96Q2jJIYJZYltZmICB3yYttPSRgeC2rSr78dJcvf6t72lsHrC4pO912HE/O07J0VYyMSV+gCRZ81RJkbHrITcIx6wGHMHwFD8sB+k++M10zhvPVxW2sv8yYosMc1g7W2UP3Ltu+TA0N4T/0MThQyE8+pOkQeDlSjZeoOZaXK0VSmuKoVLDGs8Kc+/pckCt/x9o2ZlTBtQHlq18tlvOASDbuiEobXeAou2HYrK40Nt6Kh5VA/cwEKVJhNa1Y9KvHCYZ9ZBitXZcegLKM2sCi2z/BhhC6ptrMBM6c/VtmRB9eYfLZpceez9W6G1e2uXQAU+xPIdMyW8+uXU7Uors2MA==
+  </signature>
+  <payload>
+    <type>enterprise</type>
+    <group_id>Enterprise</group_id>
+    <quota>10000000000</quota>
+    <max_violations>5</max_violations>
+    <window_period>30</window_period>
+    <creation_time>1390350558</creation_time>
+    <expiration_time>1400223600</expiration_time>
+    <label>Splunk Internal License DO NOT DISTRIBUTE</label>
+    <features>
+      <feature>Auth</feature>
+      <feature>FwdData</feature>
+      <feature>RcvData</feature>
+      <feature>LocalSearch</feature>
+      <feature>DistSearch</feature>
+      <feature>RcvSearch</feature>
+      <feature>ScheduledSearch</feature>
+      <feature>Alerting</feature>
+      <feature>DeployClient</feature>
+      <feature>DeployServer</feature>
+      <feature>SplunkWeb</feature>
+      <feature>SigningProcessor</feature>
+      <feature>SyslogOutputProcessor</feature>
+      <feature>CanBeRemoteMaster</feature>
+      <feature>AllowDuplicateKeys</feature>
+    </features>
+    <sourcetypes/>
+    <add_ons>
+      <add_on name="hadoop" type="external_results_provider">
+        <parameter key="erp_type" value="report"/>
+        <parameter key="maxNodes" value="10"/>
+      </add_on>
+    </add_ons>
+    <guid>6519AC83-17D8-4D3C-8EC8-97184E9CBDAD</guid>
+  </payload>
+</license>

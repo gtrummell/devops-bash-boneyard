@@ -1,0 +1,1105 @@
+{
+    "type": "object",
+    "$schema": "http://json-schema.org/draft-03/schema",
+    "id": "whisper/stax",
+    "required": true,
+    "properties": {
+        "attributes": {
+            "type": "object",
+            "id": "whisper/stax/attributes",
+            "required": true,
+            "properties": {
+                "cloud_vendor": {
+                    "type": "object",
+                    "id": "whisper/stax/attributes/cloud_vendor",
+                    "desscription": "The cloud vendor to be used for this stack",
+                    "required": false,
+                    "properties": {
+                        "account": {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/cloud_vendor/account",
+                            "default": "splunk-whisper-prod",
+                            "required": true
+                        },
+                        "name": {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/cloud_vendor/name",
+                            "default": "aws",
+                            "required": true
+                        }
+                    }
+                },
+                "customer_name": {
+                    "type": "string",
+                    "id": "whisper/stax/attributes/customer_name",
+                    "default": "templatetest",
+                    "required": true
+                },
+                "domain_suffix": {
+                    "type": "string",
+                    "id": "whisper/stax/attributes/domain_suffix",
+                    "default": "splunkcloud.com",
+                    "required": true
+                },
+                "monitoring_hosts": {
+                    "type": "array",
+                    "id": "whisper/stax/attributes/monitoring_hosts",
+                    "required": true,
+                    "items": [
+                        {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/monitoring_hosts/0",
+                            "default": "idx1.skynet.splunkwhisper.com:9997",
+                            "required": true
+                        },
+                        {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/monitoring_hosts/1",
+                            "default": "idx2.skynet.splunkwhisper.com:9997",
+                            "required": false
+                        },
+                        {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/monitoring_hosts/2",
+                            "default": "idx3.skynet.splunkwhisper.com:9997",
+                            "required": false
+                        }
+                    ]
+                },
+                "name": {
+                    "type": "string",
+                    "id": "whisper/stax/attributes/name",
+                    "default": "50gb-30day",
+                    "required": true
+                },
+                "repo_hostname": {
+                    "type": "string",
+                    "id": "whisper/stax/attributes/repo_hostname",
+                    "default": "1sot.splunkwhisper.com",
+                    "required": true
+                },
+                "sec": {
+                    "type": "object",
+                    "id": "whisper/stax/attributes/sec",
+                    "required": false,
+                    "properties": {
+                        "clusters": {
+                            "type": "object",
+                            "id": "whisper/stax/attributes/sec/clusters",
+                            "required": true,
+                            "properties": {
+                                "cluster_0": {
+                                    "type": "object",
+                                    "id": "whisper/stax/attributes/sec/clusters/cluster_0",
+                                    "required": false,
+                                    "properties": {
+                                        "cluster_id": {
+                                            "type": "number",
+                                            "id": "whisper/stax/attributes/sec/clusters/cluster_0/cluster_id",
+                                            "required": true
+                                        },
+                                        "master_hostname": {
+                                            "type": "string",
+                                            "id": "whisper/stax/attributes/sec/clusters/cluster_0/master_hostname",
+                                            "default": "c0m1",
+                                            "required": true
+                                        },
+                                        "replication_factor": {
+                                            "type": "number",
+                                            "id": "whisper/stax/attributes/sec/clusters/cluster_0/replication_factor",
+                                            "default": 3,
+                                            "required": true
+                                        },
+                                        "search_factor": {
+                                            "type": "number",
+                                            "id": "whisper/stax/attributes/sec/clusters/cluster_0/search_factor",
+                                            "default": 2,
+                                            "required": true
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "indexers": {
+                            "type": "object",
+                            "id": "whisper/stax/attributes/sec/indexers",
+                            "required": true,
+                            "properties": {
+                                "replication_port": {
+                                    "type": "number",
+                                    "id": "whisper/stax/attributes/sec/indexers/replication_port",
+                                    "default": 9887,
+                                    "required": true
+                                },
+                                "s2s_port": {
+                                    "type": "number",
+                                    "id": "whisper/stax/attributes/sec/indexers/s2s_port",
+                                    "default": 9997,
+                                    "required": true
+                                }
+                            }
+                        },
+                        "licenser": {
+                            "type": "object",
+                            "id": "whisper/stax/attributes/sec/licenser",
+                            "required": true,
+                            "properties": {
+                                "lb_hostname": {
+                                    "type": "string",
+                                    "id": "whisper/stax/attributes/sec/licenser/lb_hostname",
+                                    "default": "lb-licensemaster",
+                                    "required": false
+                                },
+                                "license": {
+                                    "type": "string",
+                                    "id": "whisper/stax/attributes/sec/licenser/license",
+                                    "default": "license_dev",
+                                    "required": true
+                                },
+                                "primary_hostname": {
+                                    "type": "string",
+                                    "id": "whisper/stax/attributes/sec/licenser/primary_hostname",
+                                    "default": "lm1",
+                                    "required": false
+                                },
+                                "standby_hostname": {
+                                    "type": "string",
+                                    "id": "whisper/stax/attributes/sec/licenser/standby_hostname",
+                                    "default": "lm2",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "mgmt_port": {
+                            "type": "number",
+                            "id": "whisper/stax/attributes/sec/mgmt_port",
+                            "default": 8089,
+                            "required": true
+                        },
+                        "search_head": {
+                            "type": "object",
+                            "id": "whisper/stax/attributes/sec/search_head",
+                            "required": true,
+                            "properties": {
+                                "lb_hostname": {
+                                    "type": "string",
+                                    "id": "whisper/stax/attributes/sec/search_head/lb_hostname",
+                                    "default": "lb-searchhead",
+                                    "required": false
+                                },
+                                "primary_hostname": {
+                                    "type": "string",
+                                    "id": "whisper/stax/attributes/sec/search_head/primary_hostname",
+                                    "default": "sh1",
+                                    "required": false
+                                },
+                                "standby_hostname": {
+                                    "type": "string",
+                                    "id": "whisper/stax/attributes/sec/search_head/standby_hostname",
+                                    "default": "sh2",
+                                    "required": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "secureobj_override": {
+                    "type": "object",
+                    "id": "whisper/stax/attributes/secureobj_override",
+                    "required": true,
+                    "properties": {
+                        "os_ssl_certs": {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/secureobj_override/os_ssl_certs",
+                            "default": "none",
+                            "required": true
+                        },
+                        "postfix_sasl_passwd": {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/secureobj_override/postfix_sasl_passwd",
+                            "default": "none",
+                            "required": true
+                        },
+                        "splunk_license": {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/secureobj_override/splunk_license",
+                            "default": "none",
+                            "required": true
+                        },
+                        "splunk_passwd": {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/secureobj_override/splunk_passwd",
+                            "default": "none",
+                            "required": true
+                        },
+                        "splunk_web_certs": {
+                            "type": "string",
+                            "id": "whisper/stax/attributes/secureobj_override/splunk_web_certs",
+                            "default": "none",
+                            "required": true
+                        }
+                    }
+                },
+                "ssh_keypair": {
+                    "type": "string",
+                    "id": "whisper/stax/attributes/ssh_keypair",
+                    "default": "infra_50gb-30day",
+                    "required": false
+                },
+                "stackid": {
+                    "type": "string",
+                    "id": "whisper/stax/attributes/stackid",
+                    "default": "50gb-30day",
+                    "required": false
+                },
+                "zabbix_hostname": {
+                    "type": "array",
+                    "id": "whisper/stax/attributes/zabbix_hostname",
+                    "required": false,
+                    "items": {
+                        "type": "string",
+                        "id": "whisper/stax/attributes/zabbix_hostname/0",
+                        "default": "zabbix1.splunkwhisper.com",
+                        "required": false
+                    }
+
+
+                }
+            }
+        },
+        "build": {
+            "type": "object",
+            "id": "whisper/stax/build",
+            "required": false,
+            "properties": {
+                "disposition": {
+                    "type": "string",
+                    "id": "whisper/stax/build/disposition",
+                    "default": "keep",
+                    "required": false
+                },
+                "executor_pool": {
+                    "type": "string",
+                    "id": "whisper/stax/build/executor_pool",
+                    "default": "Whisper-Prod",
+                    "required": false
+                },
+                "machine": {
+                    "type": "string",
+                    "id": "whisper/stax/build/machine",
+                    "default": "ec2",
+                    "required": false
+                },
+                "projects": {
+                    "type": "array",
+                    "id": "whisper/stax/build/projects",
+                    "required": false,
+                    "items": {
+                        "type": "string",
+                        "id": "whisper/stax/build/projects/0",
+                        "default": "whisper",
+                        "required": false
+                    }
+
+
+                },
+                "scm_branch": {
+                    "type": "string",
+                    "id": "whisper/stax/build/scm_branch",
+                    "default": "master",
+                    "required": false
+                }
+            }
+        },
+        "compute": {
+            "type": "object",
+            "id": "whisper/stax/compute",
+            "required": false,
+            "properties": {
+                "c0m1": {
+                    "type": "object",
+                    "id": "whisper/stax/compute/c0m1",
+                    "required": false,
+                    "properties": {
+                        "block_devices": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/c0m1/block_devices",
+                            "required": false,
+                            "properties": {
+                                "/dev/sdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/c0m1/block_devices//dev/sdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/sdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/c0m1/block_devices//dev/sdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/xvdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/c0m1/block_devices//dev/xvdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/xvdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/c0m1/block_devices//dev/xvdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "instance_type": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/c0m1/instance_type",
+                            "default": "m1.large",
+                            "required": false
+                        },
+                        "lvm": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/c0m1/lvm",
+                            "required": false,
+                            "properties": {
+                                "devices": {
+                                    "type": "array",
+                                    "id": "whisper/stax/compute/c0m1/lvm/devices",
+                                    "required": false,
+                                    "items": [
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/c0m1/lvm/devices/0",
+                                            "default": "/dev/xvdb",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/c0m1/lvm/devices/1",
+                                            "default": "/dev/xvdc",
+                                            "required": false
+                                        }
+                                    ]
+                                },
+                                "layout": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/c0m1/lvm/layout",
+                                    "default": "striped",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "reprovision": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/c0m1/reprovision",
+                            "default": "allow",
+                            "required": false
+                        },
+                        "role": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/c0m1/role",
+                            "default": "cluster-master",
+                            "required": false
+                        },
+                        "tags": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/c0m1/tags",
+                            "required": false,
+                            "properties": {
+                                "ticket": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/c0m1/tags/ticket",
+                                    "default": "CO-72",
+                                    "required": false
+                                },
+                                "customer_type": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/c0m1/tags/customer_type",
+                                    "default": "Test",
+                                    "required": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "idx1": {
+                    "type": "object",
+                    "id": "whisper/stax/compute/idx1",
+                    "required": false,
+                    "properties": {
+                        "block_devices": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx1/block_devices",
+                            "required": false,
+                            "properties": {
+                                "/dev/sdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/block_devices//dev/sdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/sdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/block_devices//dev/sdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/sdd": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/block_devices//dev/sdd",
+                                    "default": "ephemeral2",
+                                    "required": false
+                                },
+                                "/dev/sde": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/block_devices//dev/sde",
+                                    "default": "ephemeral3",
+                                    "required": false
+                                },
+                                "/dev/xvdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/block_devices//dev/xvdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/xvdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/block_devices//dev/xvdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/xvdd": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/block_devices//dev/xvdd",
+                                    "default": "ephemeral2",
+                                    "required": false
+                                },
+                                "/dev/xvde": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/block_devices//dev/xvde",
+                                    "default": "ephemeral3",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "cluster_id": {
+                            "type": "number",
+                            "id": "whisper/stax/compute/idx1/cluster_id",
+                            "required": false
+                        },
+                        "instance_type": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx1/instance_type",
+                            "default": "m1.xlarge",
+                            "required": false
+                        },
+                        "lvm": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx1/lvm",
+                            "required": false,
+                            "properties": {
+                                "devices": {
+                                    "type": "array",
+                                    "id": "whisper/stax/compute/idx1/lvm/devices",
+                                    "required": false,
+                                    "items": [
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx1/lvm/devices/0",
+                                            "default": "/dev/xvdb",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx1/lvm/devices/1",
+                                            "default": "/dev/xvdc",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx1/lvm/devices/2",
+                                            "default": "/dev/xvdd",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx1/lvm/devices/3",
+                                            "default": "/dev/xvde",
+                                            "required": false
+                                        }
+                                    ]
+                                },
+                                "layout": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/lvm/layout",
+                                    "default": "striped",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "reprovision": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx1/reprovision",
+                            "default": "allow",
+                            "required": false
+                        },
+                        "role": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx1/role",
+                            "default": "indexer",
+                            "required": false
+                        },
+                        "tags": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx1/tags",
+                            "required": false,
+                            "properties": {
+                                "ticket": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/tags/ticket",
+                                    "default": "CO-72",
+                                    "required": false
+                                },
+                                "customer_type": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx1/tags/customer_type",
+                                    "default": "Test",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "zone": {
+                            "type": "number",
+                            "id": "whisper/stax/compute/idx1/zone",
+                            "default": 2,
+                            "required": false
+                        }
+                    }
+                },
+                "idx2": {
+                    "type": "object",
+                    "id": "whisper/stax/compute/idx2",
+                    "required": false,
+                    "properties": {
+                        "block_devices": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx2/block_devices",
+                            "required": false,
+                            "properties": {
+                                "/dev/sdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/block_devices//dev/sdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/sdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/block_devices//dev/sdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/sdd": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/block_devices//dev/sdd",
+                                    "default": "ephemeral2",
+                                    "required": false
+                                },
+                                "/dev/sde": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/block_devices//dev/sde",
+                                    "default": "ephemeral3",
+                                    "required": false
+                                },
+                                "/dev/xvdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/block_devices//dev/xvdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/xvdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/block_devices//dev/xvdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/xvdd": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/block_devices//dev/xvdd",
+                                    "default": "ephemeral2",
+                                    "required": false
+                                },
+                                "/dev/xvde": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/block_devices//dev/xvde",
+                                    "default": "ephemeral3",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "cluster_id": {
+                            "type": "number",
+                            "id": "whisper/stax/compute/idx2/cluster_id",
+                            "required": false
+                        },
+                        "instance_type": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx2/instance_type",
+                            "default": "m1.xlarge",
+                            "required": false
+                        },
+                        "lvm": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx2/lvm",
+                            "required": false,
+                            "properties": {
+                                "devices": {
+                                    "type": "array",
+                                    "id": "whisper/stax/compute/idx2/lvm/devices",
+                                    "required": false,
+                                    "items": [
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx2/lvm/devices/0",
+                                            "default": "/dev/xvdb",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx2/lvm/devices/1",
+                                            "default": "/dev/xvdc",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx2/lvm/devices/2",
+                                            "default": "/dev/xvdd",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx2/lvm/devices/3",
+                                            "default": "/dev/xvde",
+                                            "required": false
+                                        }
+                                    ]
+                                },
+                                "layout": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/lvm/layout",
+                                    "default": "striped",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "reprovision": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx2/reprovision",
+                            "default": "allow",
+                            "required": false
+                        },
+                        "role": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx2/role",
+                            "default": "indexer",
+                            "required": false
+                        },
+                        "tags": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx2/tags",
+                            "required": false,
+                            "properties": {
+                                "ticket": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/tags/ticket",
+                                    "default": "CO-72",
+                                    "required": false
+                                },
+                                "customer_type": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx2/tags/customer_type",
+                                    "default": "Test",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "zone": {
+                            "type": "number",
+                            "id": "whisper/stax/compute/idx2/zone",
+                            "default": 3,
+                            "required": false
+                        }
+                    }
+                },
+                "idx3": {
+                    "type": "object",
+                    "id": "whisper/stax/compute/idx3",
+                    "required": false,
+                    "properties": {
+                        "block_devices": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx3/block_devices",
+                            "required": false,
+                            "properties": {
+                                "/dev/sdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/block_devices//dev/sdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/sdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/block_devices//dev/sdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/sdd": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/block_devices//dev/sdd",
+                                    "default": "ephemeral2",
+                                    "required": false
+                                },
+                                "/dev/sde": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/block_devices//dev/sde",
+                                    "default": "ephemeral3",
+                                    "required": false
+                                },
+                                "/dev/xvdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/block_devices//dev/xvdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/xvdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/block_devices//dev/xvdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/xvdd": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/block_devices//dev/xvdd",
+                                    "default": "ephemeral2",
+                                    "required": false
+                                },
+                                "/dev/xvde": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/block_devices//dev/xvde",
+                                    "default": "ephemeral3",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "cluster_id": {
+                            "type": "number",
+                            "id": "whisper/stax/compute/idx3/cluster_id",
+                            "required": false
+                        },
+                        "instance_type": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx3/instance_type",
+                            "default": "m1.xlarge",
+                            "required": false
+                        },
+                        "lvm": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx3/lvm",
+                            "required": false,
+                            "properties": {
+                                "devices": {
+                                    "type": "array",
+                                    "id": "whisper/stax/compute/idx3/lvm/devices",
+                                    "required": false,
+                                    "items": [
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx3/lvm/devices/0",
+                                            "default": "/dev/xvdb",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx3/lvm/devices/1",
+                                            "default": "/dev/xvdc",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx3/lvm/devices/2",
+                                            "default": "/dev/xvdd",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/idx3/lvm/devices/3",
+                                            "default": "/dev/xvde",
+                                            "required": false
+                                        }
+                                    ]
+                                },
+                                "layout": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/lvm/layout",
+                                    "default": "striped",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "reprovision": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx3/reprovision",
+                            "default": "allow",
+                            "required": false
+                        },
+                        "role": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/idx3/role",
+                            "default": "indexer",
+                            "required": false
+                        },
+                        "tags": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/idx3/tags",
+                            "required": false,
+                            "properties": {
+                                "ticket": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/tags/ticket",
+                                    "default": "CO-72",
+                                    "required": false
+                                },
+                                "customer_type": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/idx3/tags/customer_type",
+                                    "default": "Test",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "zone": {
+                            "type": "number",
+                            "id": "whisper/stax/compute/idx3/zone",
+                            "default": 4,
+                            "required": false
+                        }
+                    }
+                },
+                "lm1": {
+                    "type": "object",
+                    "id": "whisper/stax/compute/lm1",
+                    "required": false,
+                    "properties": {
+                        "block_devices": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/lm1/block_devices",
+                            "required": false,
+                            "properties": {
+                                "/dev/sdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/lm1/block_devices//dev/sdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/sdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/lm1/block_devices//dev/sdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/xvdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/lm1/block_devices//dev/xvdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/xvdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/lm1/block_devices//dev/xvdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "instance_type": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/lm1/instance_type",
+                            "default": "m1.large",
+                            "required": false
+                        },
+                        "lvm": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/lm1/lvm",
+                            "required": false,
+                            "properties": {
+                                "devices": {
+                                    "type": "array",
+                                    "id": "whisper/stax/compute/lm1/lvm/devices",
+                                    "required": false,
+                                    "items": [
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/lm1/lvm/devices/0",
+                                            "default": "/dev/xvdb",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/lm1/lvm/devices/1",
+                                            "default": "/dev/xvdc",
+                                            "required": false
+                                        }
+                                    ]
+                                },
+                                "layout": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/lm1/lvm/layout",
+                                    "default": "striped",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "reprovision": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/lm1/reprovision",
+                            "default": "allow",
+                            "required": false
+                        },
+                        "role": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/lm1/role",
+                            "default": "license-master",
+                            "required": false
+                        },
+                        "tags": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/lm1/tags",
+                            "required": false,
+                            "properties": {
+                                "ticket": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/lm1/tags/ticket",
+                                    "default": "CO-72",
+                                    "required": false
+                                },
+                                "customer_type": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/lm1/tags/customer_type",
+                                    "default": "Test",
+                                    "required": false
+                                }
+                            }
+                        }
+                    }
+                },
+                "sh1": {
+                    "type": "object",
+                    "id": "whisper/stax/compute/sh1",
+                    "required": false,
+                    "properties": {
+                        "block_devices": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/sh1/block_devices",
+                            "required": false,
+                            "properties": {
+                                "/dev/sdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/sh1/block_devices//dev/sdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/sdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/sh1/block_devices//dev/sdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                },
+                                "/dev/xvdb": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/sh1/block_devices//dev/xvdb",
+                                    "default": "ephemeral0",
+                                    "required": false
+                                },
+                                "/dev/xvdc": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/sh1/block_devices//dev/xvdc",
+                                    "default": "ephemeral1",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "instance_type": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/sh1/instance_type",
+                            "default": "m1.large",
+                            "required": false
+                        },
+                        "lvm": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/sh1/lvm",
+                            "required": false,
+                            "properties": {
+                                "devices": {
+                                    "type": "array",
+                                    "id": "whisper/stax/compute/sh1/lvm/devices",
+                                    "required": false,
+                                    "items": [
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/sh1/lvm/devices/0",
+                                            "default": "/dev/xvdb",
+                                            "required": false
+                                        },
+                                        {
+                                            "type": "string",
+                                            "id": "whisper/stax/compute/sh1/lvm/devices/1",
+                                            "default": "/dev/xvdc",
+                                            "required": false
+                                        }
+                                    ]
+                                },
+                                "layout": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/sh1/lvm/layout",
+                                    "default": "striped",
+                                    "required": false
+                                }
+                            }
+                        },
+                        "reprovision": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/sh1/reprovision",
+                            "default": "allow",
+                            "required": false
+                        },
+                        "role": {
+                            "type": "string",
+                            "id": "whisper/stax/compute/sh1/role",
+                            "default": "search-head",
+                            "required": false
+                        },
+                        "tags": {
+                            "type": "object",
+                            "id": "whisper/stax/compute/sh1/tags",
+                            "required": false,
+                            "properties": {
+                                "ticket": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/sh1/tags/ticket",
+                                    "default": "CO-72",
+                                    "required": false
+                                },
+                                "customer_type": {
+                                    "type": "string",
+                                    "id": "whisper/stax/compute/sh1/tags/customer_type",
+                                    "default": "Test",
+                                    "required": false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

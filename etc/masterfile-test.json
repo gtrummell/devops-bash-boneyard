@@ -1,0 +1,9 @@
+{
+    "id": "test",
+    "include_object": [],
+    "attributes": {
+        "stuff": "data"
+    },
+    "build": {},
+    "compute": {}
+}
