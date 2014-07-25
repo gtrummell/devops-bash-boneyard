@@ -3,8 +3,9 @@
 subcmd=${1}
 pickserv=${2}
 
-chefdir=~/.chef
+chefdir=${HOME}/.chef
 knifeconf=${chefdir}/knife.rb
+chefconf=${chefdir}/client.rb
 secretfile=${chefdir}/data_bag.secret
 chefservs=`ls -1 ${chefdir}|grep knife-|sed 's/knife-//g'|sed 's/\.rb//g'`
 
@@ -37,15 +38,17 @@ function use () {
 		exit 1
 	fi
 
-	# Remove existing symlinks for knife.rb
+	# Remove existing symlinks for knife.rb and client.rb
 	if [ -L ${knifeconf} ]
 	then
 		#echo -n "Deleting existing symlink at ${knifeconf}... "
 		rm -f ${knifeconf}
+		rm -f ${chefconf}
 	fi
 
 	# Now link from the picked server to knife.rb
 	ln -s knife-${pickserv}.rb ${knifeconf}
+	ln -s knife-${pickserv}.rb ${chefconf}
 	echo "knifeblock: selected ${pickserv}"
 
 	# Quit if we can't find a secret file matching the alias.
