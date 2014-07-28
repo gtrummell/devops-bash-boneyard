@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 
-required_gems = %W{rest-client logger}
+required_gems = %W{rest-client logger mixlib/cli}
 
 required_gems.each do |required_gem|
   begin
-    gem required_gem
+    gem required_gem.gsub(/\//, '-')
   rescue
     begin
       system("gem install #{required_gem}")
@@ -16,6 +16,43 @@ required_gems.each do |required_gem|
 
   require required_gem
 end
+
+class SplunkAPITestCLI
+  include Mixlib::CLI
+
+  option :url,
+         :short => '-u URL',
+         :long  => '--url URL',
+         :default => 'https://localhost:8089',
+         :required => false,
+         :description => 'Splunkd URL to test'
+
+  option :retries,
+         :short => '-r RETRIES',
+         :long  => '--retries RETRIES',
+         :default => 5,
+         :required => false,
+         :description => 'Number of retries to attempt before failing'
+
+  option :retry_interval,
+         :short => '-i INTERVAL',
+         :long => '--interval INTERVAL',
+         :default => 18,
+         :required => false,
+         :description => 'Interval between retries in seconds'
+
+  option :help,
+         :short => '-h',
+         :long => '--help',
+         :description => "Display help for #{File.basename(__FILE__).gsub(/\..*/, '')}",
+         :on => :tail,
+         :boolean => true,
+         :show_options => true,
+         :exit => 0
+end
+
+cli = SplunkAPITestCLI.new
+cli.parse_options
 
 # Set up the logger
 def log(level, msg)
@@ -60,8 +97,8 @@ def test(test_url, retries, retry_interval)
     log('fatal', fatal_msg)
     raise(fatal_msg)
   else
-    log('info', "#{log_msg} Test completed at #{Time.now} in #{Time.now.to_f - time_start.to_f} seconds.")
+    log('info', "Test of #{test_url} completed with response #{splunk_response} at #{Time.now} in #{Time.now.to_f - time_start.to_f} seconds.")
   end
 end
 
-test('https://localhost:8089', 5, 5)
+test(cli.config[:url], cli.config[:retries].to_i, cli.config[:retry_interval].to_i)
