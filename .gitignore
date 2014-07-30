@@ -1,6 +1,8 @@
 # Temporary files and gem sources
 *.gem
 *.rbc
+.bundle
+.config
 /.config
 /coverage/
 /InstalledFiles
@@ -9,6 +11,18 @@
 /test/tmp/
 /test/version_tmp/
 /tmp/
+atlassian-ide-plugin.xml
+coverage
+Gemfile.lock
+InstalledFiles
+lib/bundler/man
+packer_cache
+pkg
+rdoc
+spec/reports
+test/tmp
+test/version_tmp
+tmp
 
 ## Specific to RubyMotion:
 .dat*
