@@ -13,7 +13,6 @@
 /tmp/
 atlassian-ide-plugin.xml
 coverage
-Gemfile.lock
 InstalledFiles
 lib/bundler/man
 packer_cache
