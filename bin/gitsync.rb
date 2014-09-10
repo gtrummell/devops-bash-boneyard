@@ -9,8 +9,7 @@ libs.each do |lib|
     gem gem_lib
   rescue => err_parent
     begin
-      puts("Gem #{gem_lib} not present. Attempting " +
-        "install.\n#{err_parent}")
+      puts("Gem #{gem_lib} not present. Attempting install.\n#{err_parent}")
       system('gem install ' + lib)
       Gem.clear_paths
     rescue => err_child
@@ -105,17 +104,14 @@ class GitSync
         next unless (open_repo = _open_repo(repo))
         user_branch = open_repo.current_branch
 
-        repo_thread = Thread.new do
-          open_repo.branches.local.each do |branch|
-            _pull_repo(open_repo, branch)
-          end
+        open_repo.branches.local.each do |branch|
+          _pull_repo(open_repo, branch)
         end
-        repo_thread.join
 
         open_repo.checkout(user_branch)
       end
     rescue => err
-      _logger('fatal', "Fatal sync error!\n#{err}")
+      _logger('fatal', "Fatal repository sync error!\n#{err}")
       raise err
     end
   end
@@ -123,7 +119,8 @@ end
 
 # Command line logic for all-in-one Ruby Script utility
 if ARGV.empty? || ARGV.include?('--help' || '-h')
-  exit(puts 'Usage: gitsync <dir> [dir dir dir...]')
+  puts 'Usage: gitsync <dir> [dir dir dir ...]'
+  exit 3
 else
   ARGV.each do |dir|
     source_root_thread = Thread.new {
