@@ -50,3 +50,4 @@ Gemfile.lock
 # IDE files
 /.idea/
 atlassian-ide-plugin.xml
+/.project
