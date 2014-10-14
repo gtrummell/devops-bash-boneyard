@@ -7,13 +7,12 @@ require 'jenkins_api_client'
 require 'json'
 require 'mixlib/cli'
 require 'uri'
-
-require File.expand_path('/home/gtrummell/Source/stackmakr/tools/lib/stackutil.rb')
+#require 'logger'
 
 include FileUtils
 
 # Initialize the logger
-@logger = StackUtil::Logger.instance
+#@logger = Logger.new
 
 include FileUtils
 
@@ -24,22 +23,22 @@ class ExtractionCLI
   option :jenkins_url,
          :short => '-u URL',
          :long => '--url URL',
-         :default => 'https://corp-stackmakr.splunkwhisper.com/',
+         :default => 'http://localhost',
          :description => 'The URL of the Jenkins Server',
          :required => true
 
   option :jenkins_port,
          :short => '-p PORT',
          :long => '--port PORT',
-         :default => '443',
+         :default => '8080',
          :description => 'The authorized port to connect to the Jenkins Server',
          :required => true
 
   option :jenkins_ssl,
          :short => '-s',
          :long => '--ssl',
-         :default => true,
-         :description => 'Enable Jenkins SSL (Default is true)',
+         :default => false,
+         :description => 'Enable Jenkins SSL (Default is false)',
          :boolean => true,
          :required => false
 
@@ -47,18 +46,18 @@ class ExtractionCLI
          :short => '-n USERNAME',
          :long => '--username USERNAME',
          :description => 'The username to provide the Jenkins Server',
-         :required => true
+         :required => false
 
   option :jenkins_pass64,
          :short => '-w PASSWORD64',
          :long => '--password PASSWORD64',
          :description => 'The base64-encoded password for the Jenkins User. Use the base64 command on your *nix machine to hash your Jenkins password',
-         :required => true
+         :required => false
 
   option :export_path,
          :short => '-x PATH',
          :long => '--export_path PATH',
-         :default => 'tools/jenkins/',
+         :default => '~/tmp',
          :description => 'The path to which objects will be written',
          :required => false
 
@@ -160,7 +159,7 @@ FileUtils.rmtree(export_path)
 
 # Create the export path root and object subpaths
 puts 'Writing export paths...' if verbose
-%w{ plugins nodes jobs views }.each do |dir|
+%w{ plugins nodes jobs views manifest }.each do |dir|
   dir_path = File.join(export_path, dir)
   if FileUtils.mkdir_p(dir_path)
     puts "Created path #{dir_path}" if verbose
@@ -170,7 +169,7 @@ puts 'Writing export paths...' if verbose
 end
 
 # Set up a manifest file
-manifest_file = File.open(File.join(export_path, "#{jenkins_servername}_manifest.json"), 'w')
+manifest_file = File.open(File.join(export_path, 'manifest', "#{jenkins_servername}_manifest.json"), 'w')
 
 manifest = Hash.new
 manifest[:id] = jenkins_servername
