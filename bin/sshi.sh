@@ -2,4 +2,4 @@
 
 SERVER=$1
 
-ssh -i $HOME/.ssh/root.intern.bandpage.com.id_rsa.priv root@$SERVER
+ssh -i $HOME/.ssh/intern.pem root@$SERVER
