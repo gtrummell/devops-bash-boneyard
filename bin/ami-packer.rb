@@ -19,14 +19,14 @@ class AMIPackerCli
   option :template,
          :short => "-t TEMPLATE",
          :long  => "--template TEMPLATE",
-         :default => "/Users/gtrummell/etc/splunkcloud-ubuntu-base-20131206-packer.json",
+         :default => "~/etc/packer-templates/default.json",
          :required => true,
          :description => "The Packer.io template file to use"
 
   option :custom_script,
          :short => "-s SCRIPT",
          :long => "--script SCRIPT",
-         :default => "/Users/gtrummell/etc/splunk-default-blank-packer.sh",
+         :default => "~/etc/packer-scripts/default.sh",
          :required => false,
          :description => "Custom script to run after the provisioner template"
 

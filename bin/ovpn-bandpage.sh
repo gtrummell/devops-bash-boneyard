@@ -87,7 +87,7 @@ check_privsep_dir() {
 # Check to see if OpenVPN has been disabled.
 check_config() {
     if [ ! -e /etc/openvpn/openvpn_not_to_be_run ]; then
-	/usr/sbin/openvpn $ovpn_opts -t || exit 1
+	/usr/sbin/openvpn ${ovpn_opts} -t || exit 1
     fi
 }
 
@@ -100,7 +100,7 @@ case "$1" in
 	check_for_no_start
 	check_dev_null
 	log_daemon_msg "Starting OpenVPN SSL VPN" "openvpn" || true
-	if start-stop-daemon --start --quiet --oknodo --pidfile /var/run/openvpn.pid --exec /usr/sbin/openvpn $ovpn_opts; then
+	if start-stop-daemon --start --quiet --oknodo --pidfile /var/run/openvpn.pid --exec /usr/sbin/openvpn ${ovpn_opts}; then
 	    log_end_msg 0 || true
 	else
 	    log_end_msg 1 || true
@@ -124,7 +124,7 @@ case "$1" in
 	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile /var/run/openvpn.pid
 	check_for_no_start log_end_msg
 	check_dev_null log_end_msg
-	if start-stop-daemon --start --quiet --oknodo --pidfile /var/run/openvpn.pid --exec /usr/sbin/openvpn $ovpn_opts; then
+	if start-stop-daemon --start --quiet --oknodo --pidfile /var/run/openvpn.pid --exec /usr/sbin/openvpn ${ovpn_opts}; then
 	    log_end_msg 0 || true
 	else
 	    log_end_msg 1 || true

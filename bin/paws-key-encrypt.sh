@@ -11,7 +11,7 @@ if [[ -z ${JAVA_HOME} ]]; then
 	exit 1
 fi
 
-env java -jar $PDFB_LIB Encrypt \
+env java -jar ${PDFB_LIB} Encrypt \
 -O ${PDF_PASS} \
 -U ${PDF_PASS} \
 -canAssemble false \
