@@ -4,10 +4,11 @@
 # This is pattern for querying the Nagios server
 
 require 'chef/search/query'
-require 'mixlib/cli'
-require 'net/https'
+require 'date'
 require 'json'
 require 'logger'
+require 'mixlib/cli'
+require 'net/https'
 
 # == CLI - Set up an options parser
 class ChronosCheckCli
@@ -28,15 +29,15 @@ class ChronosCheckCli
          :short => '-f CONFIG'
 
   option :proto,
-         :boolean => false,
-         :default => 'http',
-         :description => 'Specify the protocol to contact the Chronos server (defaults to http)',
-         :long  => '--proto PROTO',
-         :short => '-p PROTO'
+         :boolean => true,
+         :default => false,
+         :description => 'Specify HTTP or HTTPS to contact the Chronos server (defaults to http)',
+         :long  => '--https',
+         :short => '-h'
 
   option :state_file,
          :boolean => false,
-         :default => '/dev/shm/chronos-state.json',
+         :default => '/tmp/chronos-state.json',
          :description => 'Path to the state file',
          :long  => '--state-file STATE-FILE',
          :short => '-s STATE-FILE'
@@ -72,39 +73,31 @@ class ChronosCheck
 
 	# === Initialize Class
 	# For now feed in the port and protocol.
-	def initialize(*args)	# ChronosCheck.new(chef_environment, chef_config, chronos_protocol, state_file, state_file_age, )
+	def initialize(*args)	# ChronosCheck.new(chef_environment, chef_config, chronos_protocol, state_file, state_file_age)
 		@chef_environment = args[0]||'local'
 
     args[1] = args[1].split(/, /) if args[1].class == 'String'
     @chef_configs = args[1]||%w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/knife.rb)
-		@chronos_proto = args[2]||'http'
-		@state_file = args[3]||File.expand_path('/dev/shm/chronos-state.json')
+
+    @chronos_proto = args[2]||'http'
+		@state_file = File.expand_path(args[3])||File.expand_path('/tmp/chronos-state.json')
 		@state_file_age = args[4]||3
 	end
 
   # === Configure Chef Objects for Class
-	# Configure Chef
-	def chef_config
-#		begin
-			# Configure Chef for this instance of the class.
-			@chef_configs.each do |config|
-        next unless Chef::Config.from_file(File.expand_path(config))
-			end
-#		rescue
-#			raise("Chef config error, tried: #{@chef_configs.join(', ')}")
-#		end
-	end
+  def get_chronos_host
+    # Configure Chef for this instance of the class.
+    @chef_configs.each do |config|
+      next unless Chef::Config.from_file(File.expand_path(config))
+    end
 
-	# Search Chef for nodes that are running the Chronos recipe in the designated
-	# environment.  The first object returned in the array contains server objects.
-	def get_chronos_host
-		chef_config
+    # Search Chef for nodes that are running the Chronos recipe in the designated
+    # environment.  The first object returned in the array contains server objects.
 		chef_query = Chef::Search::Query.new
-		chronos_host = chef_query.search('node', "recipes:*chronos* AND chef_environment:#{@chef_environment}")[0].sample.name
+    chronos_host = chef_query.search('node', "recipes:*chronos* AND chef_environment:#{@chef_environment}")[0].sample.name
 		# noinspection RubyResolve
 		chronos_node = Chef::Node.load(chronos_host)
 
-		@domain = chronos_node['domain']
 		@chronos_base_url = "#{@chronos_proto}://#{chronos_node['fqdn']}:#{chronos_node['chronos']['http_port']}"
 	end
 
@@ -112,17 +105,8 @@ class ChronosCheck
 	# Get status on all tasks and place into the state file for efficiency
 	def refresh_state
 		# Get an available Chronos host
-		get_chronos_host
+		self.get_chronos_host
 		chronos_url = URI.parse("#{@chronos_base_url}/scheduler/jobs")
-
-		# TODO: Find out if the state file needs to be written
-		# if File.exists?(@state_file)
-		# 	chronos_state = JSON.parse(File.read(@state_file))
-		# 	if URI.parse(chronos_state['chronos_url']) == chronos_url
-		# 		next
-		# 	end
-		# else
-		# end
 
 		# Get task data from the Chronos API
 		chronos_response = JSON.parse(Net::HTTP.get(chronos_url)).sort_by { |task| task['name'] }
@@ -139,10 +123,26 @@ class ChronosCheck
     end
   end
 
-  # Read from the state file
+  # Find out if state needs to be refreshed
+  def state_timer
+    unless File.exist?(@state_file)
+      self.refresh_state
+    end
+    state_file_timestamp = DateTime.parse(JSON.parse(File.read(@state_file))['query_time'])
+    max_file_age = ( DateTime.now - Rational(@state_file_age.to_i, 1440) )
+    state_expired = state_file_timestamp < max_file_age
+
+    self.refresh_state if state_expired
+    state_expired
+  end
+
+  # Parse tasks from the state file.
   def parse_tasks
-		refresh_state
+    # Refresh state if needed, set up variables.
+    self.state_timer
 		chronos_tasks = JSON.parse(File.read(@state_file))
+    chronos_domain = URI.parse(chronos_tasks['chronos_url']).host.split('.').drop(1).join('.')
+
 		nagios_data = []
 		chronos_tasks['tasks'].each do |task|
 			# Output a Nagios OK for a task with a last success
@@ -182,43 +182,50 @@ class ChronosCheck
 
 			# Return a hash in preparation for sending a REST call to Nagios
 			nagios_data << {
-				:host => "chronos.#{@domain}",
+				:host => "chronos.#{chronos_domain}",
 				:service => task['name'],
 				:status => status,
 				:output => output#,
 			}
-
-			# Some task items for future use, i.e, are we in schedule?
-			# task['epsilon']
-			# task['retries']
-			# task['disabled']
-			# task['softError']
-			# task['lastError'] unless task['lastError'].nil?
-			# task['lastSuccess']
-			# task['schedule']
-			# task['parents']
     end
 
     # output the parsed tasks.
 		nagios_data
   end
 
+  # TODO: Submit this information to Nagios
   def post_nagios
-    # TODO: Submit this information to Nagios
-    # Return the hash for now
+    JSON.pretty_generate(self.parse_tasks)
   end
 
-  def return
+  # TODO: Submit a check for an individual job.
+  def post_nrpe(task_name)
+    nrpe_task = self.parse_tasks.select { |task| task[:service] == task_name }.first
+    puts nrpe_task[:output]
+    exit(status=nrpe_task[:status].to_i)
+  end
 end
 
-# Do some script-ey stuff now.
+# == Do some work now!
 
+# Parse the CLI
 cli_data = ChronosCheckCli.new
 cli_data.parse_options
 
-puts ARGV[0]
+cli_state_file = File.expand_path(cli_data.config[:state_file])
+if cli_data.config[:proto]
+  cli_proto = 'https'
+else
+  cli_proto = 'http'
+end
 
-my_check = ChronosCheck.new(cli_data.config[:env], cli_data.config[:config], cli_data.config[:proto], cli_data.config[:state_file], cli_data.config[:state_file_age])
 
-checks = JSON.pretty_generate(my_check.parse_tasks)
-puts checks if cli_data.config[:verbose]
+# Execute the checks requested by the user.
+my_check = ChronosCheck.new(cli_data.config[:env], cli_data.config[:config], cli_proto, cli_state_file, cli_data.config[:state_file_age].to_i)
+
+#puts my_check.post_nagios
+
+
+#my_check.post_nrpe('test-echo')
+#my_check.post_nrpe('bandpage-indexers-eventim_de')
+my_check.post_nrpe('bandpage-fern-name-idbridge')

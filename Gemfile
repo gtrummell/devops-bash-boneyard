@@ -1,7 +1,7 @@
 # Gems for basic scripts.  Needed for now, but soon to add self-installer to scripts
 source 'https://rubygems.org'
 
-gem 'chef', '>=12.0.1'
+gem 'chef', '> 12.0.1'
 gem 'deep_merge'
 gem 'fog'
 gem 'git'
