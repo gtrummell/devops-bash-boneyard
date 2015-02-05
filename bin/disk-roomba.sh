@@ -35,7 +35,7 @@ clear_screenlogs () {
 
 # Delete old log files
 del_old_logs () {
-        echo "Deleting log files older than ${file_age} days and greater than ${file_size} kilobytes:"
+        echo "Deleting log files older than ${file_age} days, greater than ${file_size} kilobytes, and contains ${log_strings}"
         for log_string in ${log_strings}; do
                 sudo find /var/log -type f -mtime +${file_age} -name ${log_string} -exec sudo rm -fv {} \;
         done

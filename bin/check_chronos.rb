@@ -16,38 +16,47 @@ class ChronosCheckCli
 
   option :env,
          :boolean => false,
-         :default => 'local',
+         :default => '_default',
          :description => 'Chef environment queried for Chronos nodes',
          :long  => '--env ENVIRONMENT',
          :short => '-e ENVIRONMENT'
 
   option :config,
          :boolean => false,
-         :default => %w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/knife.rb),
+         :default => %w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/client.rb),
          :description => 'Path to Chef configuration file',
-         :long  => '--config CONFIG',
-         :short => '-f CONFIG'
+         :long  => '--config PATH',
+         :required => false,
+         :short => '-c PATH'
+
+  option :nagios_check,
+         :boolean => false,
+         :default => 'test-echo',
+         :description => 'Run a Nagios check against Chronos Task <TASK>',
+         :long => '--task TASK',
+         :required => false,
+         :short => '-t TASK'
 
   option :proto,
          :boolean => true,
          :default => false,
-         :description => 'Specify HTTP or HTTPS to contact the Chronos server (defaults to http)',
+         :description => 'Specify HTTPS to contact the Chronos server (defaults to HTTP)',
          :long  => '--https',
-         :short => '-h'
+         :required => false
 
   option :state_file,
          :boolean => false,
          :default => '/tmp/chronos-state.json',
          :description => 'Path to the state file',
-         :long  => '--state-file STATE-FILE',
-         :short => '-s STATE-FILE'
+         :long  => '--state-file PATH',
+         :required => false
 
   option :state_file_age,
          :boolean => false,
          :default => 3,
-         :description => 'Amount of time to allow before refreshing the state file',
-         :long  => '--state-age TIME',
-         :short => '-t TIME'
+         :description => 'Amount of time to allow before timing out and refreshing the state file',
+         :long  => '--state-timeout MINUTES',
+         :required => false
 
   option :verbose,
          :boolean => true,
@@ -74,10 +83,10 @@ class ChronosCheck
 	# === Initialize Class
 	# For now feed in the port and protocol.
 	def initialize(*args)	# ChronosCheck.new(chef_environment, chef_config, chronos_protocol, state_file, state_file_age)
-		@chef_environment = args[0]||'local'
+    @chef_environment = args[0]||'_default'
 
     args[1] = args[1].split(/, /) if args[1].class == 'String'
-    @chef_configs = args[1]||%w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/knife.rb)
+    @chef_configs = args[1]||%w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/client.rb)
 
     @chronos_proto = args[2]||'http'
 		@state_file = File.expand_path(args[3])||File.expand_path('/tmp/chronos-state.json')
@@ -87,21 +96,27 @@ class ChronosCheck
   # === Configure Chef Objects for Class
   def get_chronos_host
     # Configure Chef for this instance of the class.
+    logger = Logger.new(STDOUT)
     @chef_configs.each do |config|
       next unless Chef::Config.from_file(File.expand_path(config))
     end
 
+    # Fail fast.  If our target environment doesn't exist, fail gracefully.
+    available_environments = Chef::Environment.list.keys
+    logger.fatal("Environment does not exist on Chef server! #{@chef_environment}") unless
+        available_environments.include?(@chef_environment)
+
     # Search Chef for nodes that are running the Chronos recipe in the designated
     # environment.  The first object returned in the array contains server objects.
-		chef_query = Chef::Search::Query.new
+    chef_query = Chef::Search::Query.new
     chronos_host = chef_query.search('node', "recipes:*chronos* AND chef_environment:#{@chef_environment}")[0].sample.name
-		# noinspection RubyResolve
-		chronos_node = Chef::Node.load(chronos_host)
+    # noinspection RubyResolve
+    chronos_node = Chef::Node.load(chronos_host)
 
-		@chronos_base_url = "#{@chronos_proto}://#{chronos_node['fqdn']}:#{chronos_node['chronos']['http_port']}"
+    @chronos_base_url = "#{@chronos_proto}://#{chronos_node['fqdn']}:#{chronos_node['chronos']['http_port']}"
 	end
 
-	# === Use Net::HTTP to communicate with the Chronos API
+  # === Use Net::HTTP to communicate with the Chronos API
 	# Get status on all tasks and place into the state file for efficiency
 	def refresh_state
 		# Get an available Chronos host
@@ -193,12 +208,20 @@ class ChronosCheck
 		nagios_data
   end
 
+  # TODO: List tasks?
+  def list_tasks
+    task_list  = self.parse_tasks
+    task_list.each do |task|
+      puts JSON.pretty_generate(task)
+    end
+  end
+
   # TODO: Submit this information to Nagios
   def post_nagios
     JSON.pretty_generate(self.parse_tasks)
   end
 
-  # TODO: Submit a check for an individual job.
+  # Submit a check for an individual job.
   def post_nrpe(task_name)
     nrpe_task = self.parse_tasks.select { |task| task[:service] == task_name }.first
     puts nrpe_task[:output]
@@ -223,9 +246,4 @@ end
 # Execute the checks requested by the user.
 my_check = ChronosCheck.new(cli_data.config[:env], cli_data.config[:config], cli_proto, cli_state_file, cli_data.config[:state_file_age].to_i)
 
-#puts my_check.post_nagios
-
-
-#my_check.post_nrpe('test-echo')
-#my_check.post_nrpe('bandpage-indexers-eventim_de')
-my_check.post_nrpe('bandpage-fern-name-idbridge')
+my_check.post_nrpe(cli_data.config[:nagios_check])
