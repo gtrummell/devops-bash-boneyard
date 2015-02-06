@@ -83,144 +83,195 @@ class ChronosCheck
 	# === Initialize Class
 	# For now feed in the port and protocol.
 	def initialize(*args)	# ChronosCheck.new(chef_environment, chef_config, chronos_protocol, state_file, state_file_age)
-    @chef_environment = args[0]||'_default'
+    @chef_environment = "#{args[0]}"||'_default'
 
     args[1] = args[1].split(/, /) if args[1].class == 'String'
     @chef_configs = args[1]||%w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/client.rb)
 
     @chronos_proto = args[2]||'http'
-		@state_file = File.expand_path(args[3])||File.expand_path('/tmp/chronos-state.json')
+		@state_file = File.expand_path(args[3])||'/tmp/chronos-state.json'
 		@state_file_age = args[4]||3
+    @logger = Logger.new(STDOUT)
 	end
 
-  # === Configure Chef Objects for Class
-  def get_chronos_host
-    # Configure Chef for this instance of the class.
-    logger = Logger.new(STDOUT)
-    @chef_configs.each do |config|
-      next unless Chef::Config.from_file(File.expand_path(config))
-    end
+  # === Configure Chronos Server using Chef
+  def get_chef_node
+    # Set up logging
 
-    # Fail fast.  If our target environment doesn't exist, fail gracefully.
+    # If our target environment doesn't exist, fail gracefully.
     available_environments = Chef::Environment.list.keys
-    logger.fatal("Environment does not exist on Chef server! #{@chef_environment}") unless
+    raise @logger.fatal("Environment does not exist on Chef server! #{@chef_environment}") unless
         available_environments.include?(@chef_environment)
 
-    # Search Chef for nodes that are running the Chronos recipe in the designated
-    # environment.  The first object returned in the array contains server objects.
+    # Configure Chef for this instance of the class.
+    @chef_configs.each do |config|
+      if ! File.exist?(config)
+        next
+      elsif ! Chef::Config.from_file(File.expand_path(config))
+        next
+      else
+        raise @logger.fatal("Could not load configuration from: #{@chef_configs.join(', ')}")
+      end
+    end
+
+    # Search Chef for nodes that are running the Chronos recipe in the selected
+    # @chef_environment.  Pick a server at random from the list.
     chef_query = Chef::Search::Query.new
-    chronos_host = chef_query.search('node', "recipes:*chronos* AND chef_environment:#{@chef_environment}")[0].sample.name
+    raise @logger.fatal("Could not find a Cronos node in #{@chef_environment}") unless
+        ( chronos_node_name =
+            chef_query.search('node', "recipes:*chronos* AND chef_environment:#{@chef_environment}")[0]
+                .sample.name )
+
+    # Load the Chronos server's Chef node data
     # noinspection RubyResolve
-    chronos_node = Chef::Node.load(chronos_host)
+    raise @logger.fatal("Could not load node data for #{chronos_node_name}") unless
+        ( chronos_node = Chef::Node.load(chronos_node_name.to_s) )
 
+    # Set the Chronos server's base URL.
     @chronos_base_url = "#{@chronos_proto}://#{chronos_node['fqdn']}:#{chronos_node['chronos']['http_port']}"
-	end
 
-  # === Use Net::HTTP to communicate with the Chronos API
-	# Get status on all tasks and place into the state file for efficiency
-	def refresh_state
-		# Get an available Chronos host
-		self.get_chronos_host
-		chronos_url = URI.parse("#{@chronos_base_url}/scheduler/jobs")
+    # Return the Node object as the output of the method.
+    chronos_node
+  end
 
-		# Get task data from the Chronos API
-		chronos_response = JSON.parse(Net::HTTP.get(chronos_url)).sort_by { |task| task['name'] }
-		state_data = {
-				:chronos_url => chronos_url,
-				:query_time => DateTime.now,
-				:tasks => chronos_response
-		}
-    @state_data = state_data
+  # === Get State from the Chronos Server
+  def refresh_state
+    self.get_chef_node
+    begin
+      chronos_url = URI.parse("#{@chronos_base_url}/scheduler/jobs")
 
-    # Write to the State file
-    File.open(@state_file, 'w') do |file|
-      file.write(JSON.pretty_generate(@state_data))
+      # Get task data from the Chronos API
+      chronos_response = JSON.parse(Net::HTTP.get(chronos_url)).sort_by { |task| task['name'] }
+      state_data = {
+          :chronos_url => chronos_url,
+          :query_time => DateTime.now,
+          :tasks => chronos_response
+      }
+      @state_data = state_data
+
+      # Write to the State file
+      File.open(@state_file, 'w') do |file|
+        file.write(JSON.pretty_generate(@state_data))
+      end
+    rescue
+      raise @logger.fatal("Could not generate state data in file #{@state_file} from #{chronos_url}")
     end
   end
 
-  # Find out if state needs to be refreshed
+  # === Check for state freshness and update if necessary
   def state_timer
-    unless File.exist?(@state_file)
-      self.refresh_state
-    end
-    state_file_timestamp = DateTime.parse(JSON.parse(File.read(@state_file))['query_time'])
-    max_file_age = ( DateTime.now - Rational(@state_file_age.to_i, 1440) )
-    state_expired = state_file_timestamp < max_file_age
+    # Set the time the state file expires, based on @state_file_age
+    state_file_expires_on = DateTime.now - Rational(@state_file_age.to_i, 1440)
 
-    self.refresh_state if state_expired
-    state_expired
+    # If the state file doesn't exist, refresh state data and write state file
+    if ! File.exist?(@state_file)
+      self.refresh_state
+
+    # Else if the state file exists, test its validity
+    elsif File.exist?(@state_file)
+      # Get the state file's timestamp.
+      state_file_timestamp = DateTime.parse(JSON.parse(File.read(@state_file))['query_time'])
+
+      # TODO: If the file timestamp and doesn't match the modify time, assume tampering and refresh state data.
+
+      # Refresh state unless the state file's timestamp shows that it hasn't yet expired.
+      self.refresh_state unless state_file_timestamp < state_file_expires_on
+    else
+      false
+    end
   end
 
-  # Parse tasks from the state file.
+  # === Parse tasks from the state file.
   def parse_tasks
     # Refresh state if needed, set up variables.
     self.state_timer
 		chronos_tasks = JSON.parse(File.read(@state_file))
     chronos_domain = URI.parse(chronos_tasks['chronos_url']).host.split('.').drop(1).join('.')
 
-		nagios_data = []
-		chronos_tasks['tasks'].each do |task|
-			# Output a Nagios OK for a task with a last success
-			if task['errorSinceLastSuccess'].to_i < 1
-				status = 0
-				output = "#{task['name']} OK: No errors since last success at #{task['lastSuccess']}"
+		# Prepare state information for Nagios checks
+    task_data = []
+    chronos_tasks['tasks'].each do |task|
 
-			# Issue a warning if the task is disabled.
-			elsif task['disabled'].to_s == 'true'
-				status = 1
-				output = "#{task['name']} WARNING: Task disabled!"
+      # Parse the success and error times if any have been recorded.
+      #(task['epsilon'] == '') ?
+      #    epsilon = nil :
+      #    epsilon = Date.parse(task['epsilon'])
 
-			# Output a Nagios CRITICAL for enabled tasks with no successes
-			elsif task['lastSuccess'].to_s == '' && task['lastError'] != ''
+      (task['lastError'] == '') ?
+          last_error = nil :
+          last_error = DateTime.parse(task['lastError'])
+
+      (task['lastSuccess'] == '') ?
+          last_success = nil :
+          last_success = DateTime.parse(task['lastSuccess'])
+
+      # Output a Nagios WARNING if the task is disabled.
+      if task['disabled']
+        status = 1
+        output = "#{task['name']} WARNING: Task disabled!"
+
+			# Output a Nagios CRITICAL for enabled tasks with no successes or failure
+			elsif ! last_error && ! last_success
 				status = 2
-				output = "#{task['name']} CRITICAL: Task cannot run! No successful runs recorded! Last error at #{task['lastError']}"
+				output = "#{task['name']} CRITICAL: Task cannot run! No successful or failed runs."
 
-			# Output a Nagios CRITICAL for tasks that have succeeded, but are now failing (i.e., a new failure).
-			elsif	task['lastError'].to_s != '' &&
-					task['errorSinceLastSuccess'].to_i > 1 &&
-					task['lastSuccess'].to_s != ''
-				status = 2
-				output = "#{task['name']} CRITICAL: Task is now failing since last success at #{task['lastSuccess']}"
+      # Output a Nagios CRITICAL for tasks that are failing with no successes
+      elsif last_error && ! last_success
+        status = 2
+        output = "#{task['name']} CRITICAL: Task cannot run! No successes, recorded last failure at #{last_error}"
 
-			# Output a Nagios CRITICAL for tasks that are enabled, but have never run.
-			elsif	task['lastSuccess'].to_s == '' &&
-					task['lastError'].to_s == ''
-				status = 2
-				output = "#{task['name']} CRITICAL: Task cannot run! No successes or errors recorded!"
+      # Output a Nagios OK for tasks that have succeeded with no failures. TODO: Make sure this is within epsilon
+      elsif last_success && ! last_error
+        status = 0
+        output = "#{task['name']} OK: Task no failures detected, last success recorded at #{last_success}"
+
+      # Output a Nagios OK for tasks with current success status
+      elsif last_success > last_error
+        status = 0
+        output = "#{task['name']} OK: Task success recorded at #{last_success}"
+
+      # Output a Nagios CRITICAL for tasks with a current failing status. TODO: Make sure this is within epsilon
+      elsif last_error > last_success
+        status = 2
+        output = "#{task['name']} CRITICAL: Task failed! Error recorded at #{last_success}"
+
+      # TODO: Output a Nagios CRITICAL for tasks that fail to meet their epsilon
+      #elsif epsilon > ( last_success + epsilon )
+      #  status = 2
+      #  output = "#{task['name']} CRITICAL: Task did not run within its epsilon! Last run at #{last_success}"
 
 			# If none of these tests match, then we are in an unknown state
 			else
 				status = 3
 				output = "#{task['name']} UNKNOWN: No conditions match known task state!"
-			end
+
+      end
 
 			# Return a hash in preparation for sending a REST call to Nagios
-			nagios_data << {
+			task_data << {
 				:host => "chronos.#{chronos_domain}",
 				:service => task['name'],
 				:status => status,
 				:output => output#,
 			}
     end
-
-    # output the parsed tasks.
-		nagios_data
+    task_data
   end
 
-  # TODO: List tasks?
-  def list_tasks
+  # === TODO: Write out the Nagios commands definition and chronos host.
+  def write_nagios_config
     task_list  = self.parse_tasks
     task_list.each do |task|
       puts JSON.pretty_generate(task)
     end
   end
 
-  # TODO: Submit this information to Nagios
+  # === TODO: Post Chronos task data to Nagios via nagios-api
   def post_nagios
     JSON.pretty_generate(self.parse_tasks)
   end
 
-  # Submit a check for an individual job.
+  # === Submit a check for an individual Chronos task.
   def post_nrpe(task_name)
     nrpe_task = self.parse_tasks.select { |task| task[:service] == task_name }.first
     puts nrpe_task[:output]
@@ -230,11 +281,12 @@ end
 
 # == Do some work now!
 
-# Parse the CLI
+# === Parse the CLI
 cli_data = ChronosCheckCli.new
 cli_data.parse_options
 
 cli_state_file = File.expand_path(cli_data.config[:state_file])
+cli_state_file_age = cli_data.config[:state_file_age].to_i
 if cli_data.config[:proto]
   cli_proto = 'https'
 else
@@ -242,7 +294,7 @@ else
 end
 
 
-# Execute the checks requested by the user.
-my_check = ChronosCheck.new(cli_data.config[:env], cli_data.config[:config], cli_proto, cli_state_file, cli_data.config[:state_file_age].to_i)
+# === Execute the checks requested by the user.
+my_check = ChronosCheck.new(cli_data.config[:env], cli_data.config[:config], cli_proto, cli_state_file, cli_state_file_age)
 
 my_check.post_nrpe(cli_data.config[:nagios_check])
