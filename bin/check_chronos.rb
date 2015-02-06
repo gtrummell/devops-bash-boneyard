@@ -146,8 +146,7 @@ class ChronosCheck
 		nagios_data = []
 		chronos_tasks['tasks'].each do |task|
 			# Output a Nagios OK for a task with a last success
-			if task['errorSinceLastSuccess'].to_i == 0 &&
-					task['lastSuccess'].to_s != ''
+			if task['errorSinceLastSuccess'].to_i < 1
 				status = 0
 				output = "#{task['name']} OK: No errors since last success at #{task['lastSuccess']}"
 
