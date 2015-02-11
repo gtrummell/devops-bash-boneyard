@@ -14,28 +14,115 @@ require 'net/https'
 class ChronosCheckCli
   include Mixlib::CLI
 
+  # Help text
+  help_text = <<-EOF
+Show this help message
+
+    chronos_check - a Nagios check for AirBnB Chronos.
+
+    Syntax Detail:
+    A valid Chef Environment and a verb are required at minimum.
+
+    chronos_check -e <chev_environment>  /-t|-p|-w/ [long_options]
+
+    Searches Chef for nodes running the Chronos recipe in their run_lists
+    Writes Nagios configuration files from a query of Chronos tasks.
+    Produces a Nagios/NRPE check result for a named task.
+    Posts to Zorkian's Nagios API (https://github.com/zorkian/nagios-api).
+
+    Proprietary License - Do Not Distribute
+  EOF
+
+  description_env = <<-EOF
+Chef Environment - chronos_check searches
+                                     the specified Chef Environment to find
+                                     nodes with the Chronos recipe in their run
+                                     lists.  Defaults to _default
+
+  EOF
+
+  description_config = <<-EOF
+Path to Chef configuration file(s)
+                                     chronos_check attempts to load configuration
+                                     file(s) in order until one of them loads
+                                     successfully. chronos_check is preconfigured
+                                     to search Chef configuration files in the
+                                     following order:
+                                     ${HOME}/.chef/knife.rb
+                                     ${HOME}/.chef/client.rb
+                                     /etc/chef/knife.rb
+                                     /etc/chef/client.rb
+
+  EOF
+
+  description_nagios_check = <<-EOF
+Nagios Check - Return a Nagios check
+                                     result from named Chronos Task <task>.
+                                     chronos_check will output standard Nagios
+                                     check messages exit codes.
+
+  EOF
+
+  description_nagios_api = <<-EOF
+Post to Nagios API - Post all checks to
+                                     Nagios API. (You must have Zorkian's
+                                     Nagios API installed and running. See
+                                     https://github.com/zorkian/nagios-api
+
+  EOF
+
+  description_write_config = <<-EOF
+Write to Nagios config files - Process
+                                     Chronos task names into individual Nagios
+                                     checks. chronos_check is hard-coded to
+                                     write to /etc/nagios/commands/chronos_check.cfg
+                                     and /etc/nagios/objects/servers/<chronos_host>.cfg
+
+  EOF
+
+  # === Required Arguments
+  # A Chef environment and configuration are required; however these defaults
+  # should allow this command to run even if no arguments are given.
+
   option :env,
          :boolean => false,
          :default => '_default',
-         :description => 'Chef environment queried for Chronos nodes',
-         :long  => '--env ENVIRONMENT',
+         :description => description_env,
+         :long  => '--env <chef_environment>',
+         :required => false,
          :short => '-e ENVIRONMENT'
 
-  option :config,
+  option :chef_config,
          :boolean => false,
          :default => %w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/client.rb),
-         :description => 'Path to Chef configuration file',
-         :long  => '--config PATH',
+         :description => description_config,
+         :long  => '--config <path>',
          :required => false,
          :short => '-c PATH'
 
+  # === Verbs - Short Options Only
+
   option :nagios_check,
          :boolean => false,
-         :default => 'test-echo',
-         :description => 'Run a Nagios check against Chronos Task <TASK>',
-         :long => '--task TASK',
+         :description => description_nagios_check,
          :required => false,
-         :short => '-t TASK'
+         :short => '-t <chronos_task_name>'
+
+  option :post_api,
+         :boolean => true,
+         :default => false,
+         :description => description_nagios_api,
+         :required => false,
+         :short => '-p'
+
+  option :write_config,
+         :boolean => true,
+         :default => false,
+         :description => description_write_config,
+         :required => false,
+         :short => '-w'
+
+  # === Configuration - Long Options Only
 
   option :proto,
          :boolean => true,
@@ -48,14 +135,14 @@ class ChronosCheckCli
          :boolean => false,
          :default => '/tmp/chronos-state.json',
          :description => 'Path to the state file',
-         :long  => '--state-file PATH',
+         :long  => '--state-file <path>',
          :required => false
 
   option :state_file_age,
          :boolean => false,
          :default => 3,
          :description => 'Amount of time to allow before timing out and refreshing the state file',
-         :long  => '--state-timeout MINUTES',
+         :long  => '--state-timeout <minutes>',
          :required => false
 
   option :verbose,
@@ -69,7 +156,7 @@ class ChronosCheckCli
   option :help,
          :boolean => true,
          :default => false,
-         :description => 'Show this help message',
+         :description => help_text,
          :exit => 0,
          :long => '--help',
          :on => :tail,
@@ -105,12 +192,14 @@ class ChronosCheck
 
     # Configure Chef for this instance of the class.
     @chef_configs.each do |config|
-      if ! File.exist?(config)
+      if ( ! File.exist?(config) ) && ( config == @chef_configs.last )
+        raise @logger.fatal("Could not load Chef configuration from: #{@chef_configs.join(', ')}")
+      elsif ! File.exist?(config)
         next
       elsif ! Chef::Config.from_file(File.expand_path(config))
         next
       else
-        raise @logger.fatal("Could not load configuration from: #{@chef_configs.join(', ')}")
+        raise @logger.fatal("Could not load Chef configuration from: #{config}")
       end
     end
 
@@ -192,11 +281,8 @@ class ChronosCheck
     task_data = []
     chronos_tasks['tasks'].each do |task|
 
-      # Parse the success and error times if any have been recorded.
-      #(task['epsilon'] == '') ?
-      #    epsilon = nil :
-      #    epsilon = Date.parse(task['epsilon'])
 
+      # Parse the success and error times if any have been recorded.
       (task['lastError'] == '') ?
           last_error = nil :
           last_error = DateTime.parse(task['lastError'])
@@ -223,19 +309,20 @@ class ChronosCheck
       # Output a Nagios OK for tasks that have succeeded with no failures. TODO: Make sure this is within epsilon
       elsif last_success && ! last_error
         status = 0
-        output = "#{task['name']} OK: Task no failures detected, last success recorded at #{last_success}"
+        output = "#{task['name']} OK: Task reports success at #{last_success}"
 
       # Output a Nagios OK for tasks with current success status
       elsif last_success > last_error
         status = 0
-        output = "#{task['name']} OK: Task success recorded at #{last_success}"
+        output = "#{task['name']} OK: Task reports recovery at #{last_success} from error at #{last_error}"
 
       # Output a Nagios CRITICAL for tasks with a current failing status. TODO: Make sure this is within epsilon
       elsif last_error > last_success
         status = 2
         output = "#{task['name']} CRITICAL: Task failed! Error recorded at #{last_success}"
 
-      # TODO: Output a Nagios CRITICAL for tasks that fail to meet their epsilon
+      # TODO: Output a Nagios CRITICAL for tasks that fail to meet their schedule.  Here is the formula:
+        # Parse the schedule
       #elsif epsilon > ( last_success + epsilon )
       #  status = 2
       #  output = "#{task['name']} CRITICAL: Task did not run within its epsilon! Last run at #{last_success}"
@@ -280,6 +367,7 @@ class ChronosCheck
 end
 
 # == Do some work now!
+# Use the classes defined above to perform the checks.
 
 # === Parse the CLI
 cli_data = ChronosCheckCli.new
@@ -293,8 +381,22 @@ else
   cli_proto = 'http'
 end
 
+# === Display help if no options are given
+if ARGV.empty?
+  raise cli_data.config[:help]
+end
 
 # === Execute the checks requested by the user.
-my_check = ChronosCheck.new(cli_data.config[:env], cli_data.config[:config], cli_proto, cli_state_file, cli_state_file_age)
+exec_check = ChronosCheck.new(cli_data.config[:env], cli_data.config[:config], cli_proto, cli_state_file, cli_state_file_age)
 
-my_check.post_nrpe(cli_data.config[:nagios_check])
+if cli_data.config[:post_api]
+  puts exec_check.post_nagios
+end
+
+if cli_data.config[:write_config]
+  puts 'TODO: Write config'
+end
+
+if cli_data.config[:nagios_check]
+  exec_check.post_nrpe(cli_data.config[:nagios_check])
+end
