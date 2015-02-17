@@ -3,10 +3,10 @@
 require 'ruby-sox'
 
 # Hardcode input directories for now.
-input_dirs = ['/Volumes/Media/Music/~To File/~From Krispy']
+input_dirs = %w(~/Downloads ~/Music)
 
 # Hardcode input formats for now.
-input_exts = %w{wav}
+input_exts = %w(wav)
 
 # Go through each directory
 input_files = []
