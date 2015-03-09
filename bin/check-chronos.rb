@@ -15,7 +15,7 @@ class ChronosCheckCli
   include Mixlib::CLI
 
   # Help text
-  help_text = <<-EOF
+  description_help = <<-EOF
 Show this help message
 
     chronos_check - a Nagios check for AirBnB Chronos.
@@ -48,8 +48,8 @@ Path to Chef configuration file(s)
                                      successfully. chronos_check is preconfigured
                                      to search Chef configuration files in the
                                      following order:
-                                     ${HOME}/.chef/knife.rb
-                                     ${HOME}/.chef/client.rb
+                                     #{ENV['HOME']}/.chef/knife.rb
+                                     #{ENV['HOME']}/.chef/client.rb
                                      /etc/chef/knife.rb
                                      /etc/chef/client.rb
 
@@ -80,6 +80,30 @@ Write to Nagios config files - Process
 
   EOF
 
+  description_proto = <<-EOF
+Specify HTTPS to contact the Chronos server (defaults to HTTP)
+
+  EOF
+
+  description_state_file = <<-EOF
+Path to the state file (defaults to /tmp/chronos-state.json)
+
+  EOF
+
+  description_state_file_age = <<-EOF
+Amount of time in minutes to allow before
+                                     timing out and refreshing the state file
+                                     (Defaults to 3 minutes)
+
+  EOF
+
+  description_verbose = <<-EOF
+Turn on verbose logging
+
+  EOF
+
+  @help_text = description_help
+
   # === Required Arguments
   # A Chef environment and configuration are required; however these defaults
   # should allow this command to run even if no arguments are given.
@@ -104,6 +128,7 @@ Write to Nagios config files - Process
 
   option :nagios_check,
          :boolean => false,
+         :default => 'test-echo',
          :description => description_nagios_check,
          :required => false,
          :short => '-t <chronos_task_name>'
@@ -127,37 +152,37 @@ Write to Nagios config files - Process
   option :proto,
          :boolean => true,
          :default => false,
-         :description => 'Specify HTTPS to contact the Chronos server (defaults to HTTP)',
+         :description => description_proto,
          :long  => '--https',
          :required => false
 
   option :state_file,
          :boolean => false,
          :default => '/tmp/chronos-state.json',
-         :description => 'Path to the state file',
+         :description => description_state_file,
          :long  => '--state-file <path>',
          :required => false
 
   option :state_file_age,
          :boolean => false,
          :default => 3,
-         :description => 'Amount of time to allow before timing out and refreshing the state file',
+         :description => description_state_file_age,
          :long  => '--state-timeout <minutes>',
          :required => false
 
   option :verbose,
          :boolean => true,
          :default => false,
-         :description => 'Turn on verbose logging',
+         :description => description_verbose,
          :long  => '--verbose',
-         :required => true,
+         :required => false,
          :short => '-v'
 
   option :help,
          :boolean => true,
          :default => false,
-         :description => help_text,
-         :exit => 0,
+         :description => description_help,
+         :exit => 1,
          :long => '--help',
          :on => :tail,
          :short => '-h',
@@ -172,48 +197,58 @@ class ChronosCheck
 	def initialize(*args)	# ChronosCheck.new(chef_environment, chef_config, chronos_protocol, state_file, state_file_age)
     @chef_environment = "#{args[0]}"||'_default'
 
-    args[1] = args[1].split(/, /) if args[1].class == 'String'
-    @chef_configs = args[1]||%w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/client.rb)
+    if args[1].class == 'String'
+      chef_configs = args[1].split(/, /)
+    elsif args[1].class == 'Array'
+      chef_configs = args[1]
+    elsif args[1].nil?
+      chef_configs = %w(~/.chef/knife.rb ~/.chef/client.rb /etc/chef/knife.rb /etc/chef/client.rb)
+    else
+      raise "Unreadable list of Chef configuration files provided; #{args[1]}"
+    end
+    @chef_configs = chef_configs
 
     @chronos_proto = args[2]||'http'
 		@state_file = File.expand_path(args[3])||'/tmp/chronos-state.json'
 		@state_file_age = args[4]||3
-    @logger = Logger.new(STDOUT)
+    @chronos_check_logger = Logger.new(STDOUT)
 	end
 
   # === Configure Chronos Server using Chef
   def get_chef_node
-    # Set up logging
+    # Configure Chef for this instance of the class.
+    @chef_configs.each do |config|
+      @chronos_check_logger.info("Attempting to load Chef configuration from #{config}")
+      if ( config == @chef_configs.last ) && ( ! File.exist?(File.expand_path(config)) )
+        raise(@chronos_check_logger.fatal("Could not load Chef configuration from any of: #{@chef_configs.join(', ')}"))
+      elsif ! File.exist?(File.expand_path(config))
+        @chronos_check_logger.warn("File does not exist: #{File.expand_path(config)}")
+        next
+      elsif Chef::Config.from_file(File.expand_path(config))
+        @chronos_check_logger.info("Loaded Chef configuration file from: #{File.expand_path(config)}")
+        break
+      else
+        @chronos_check_logger.warn("Could not load Chef configuration from: #{File.expand_path(config)}")
+        next
+      end
+    end
 
     # If our target environment doesn't exist, fail gracefully.
     available_environments = Chef::Environment.list.keys
-    raise @logger.fatal("Environment does not exist on Chef server! #{@chef_environment}") unless
+    raise @chronos_check_logger.fatal("Environment does not exist on Chef server! #{@chef_environment}") unless
         available_environments.include?(@chef_environment)
-
-    # Configure Chef for this instance of the class.
-    @chef_configs.each do |config|
-      if ( ! File.exist?(config) ) && ( config == @chef_configs.last )
-        raise @logger.fatal("Could not load Chef configuration from: #{@chef_configs.join(', ')}")
-      elsif ! File.exist?(config)
-        next
-      elsif ! Chef::Config.from_file(File.expand_path(config))
-        next
-      else
-        raise @logger.fatal("Could not load Chef configuration from: #{config}")
-      end
-    end
 
     # Search Chef for nodes that are running the Chronos recipe in the selected
     # @chef_environment.  Pick a server at random from the list.
     chef_query = Chef::Search::Query.new
-    raise @logger.fatal("Could not find a Cronos node in #{@chef_environment}") unless
+    raise @chronos_check_logger.fatal("Could not find a Cronos node in #{@chef_environment}") unless
         ( chronos_node_name =
             chef_query.search('node', "recipes:*chronos* AND chef_environment:#{@chef_environment}")[0]
                 .sample.name )
 
     # Load the Chronos server's Chef node data
     # noinspection RubyResolve
-    raise @logger.fatal("Could not load node data for #{chronos_node_name}") unless
+    raise @chronos_check_logger.fatal("Could not load node data for #{chronos_node_name}") unless
         ( chronos_node = Chef::Node.load(chronos_node_name.to_s) )
 
     # Set the Chronos server's base URL.
@@ -243,7 +278,7 @@ class ChronosCheck
         file.write(JSON.pretty_generate(@state_data))
       end
     rescue
-      raise @logger.fatal("Could not generate state data in file #{@state_file} from #{chronos_url}")
+      raise @chronos_check_logger.fatal("Could not generate state data in file #{@state_file} from #{chronos_url}")
     end
   end
 
@@ -346,11 +381,20 @@ class ChronosCheck
   end
 
   # === TODO: Write out the Nagios commands definition and chronos host.
-  def write_nagios_config
+  def write_nagios_config(commands, host)
+    # Prep data for writing to files
+    cmd_file = File.expand_path(commands)
+    host_file = File.expand_path(host)
     task_list  = self.parse_tasks
     task_list.each do |task|
       puts JSON.pretty_generate(task)
     end
+
+    # Process and write commands file
+    @chronos_check_logger.info("TODO: Writing commands to #{cmd_file}")
+
+    # Process and write host file
+    @chronos_check_logger.info("TOTO: Writing host to #{host_file}")
   end
 
   # === TODO: Post Chronos task data to Nagios via nagios-api
@@ -364,39 +408,68 @@ class ChronosCheck
     puts nrpe_task[:output]
     exit(status=nrpe_task[:status].to_i)
   end
+
+  # === Submit a check for an individual Chronos task.
+  def post_nrpe_all
+    nrpe_tasks = []
+    nrpe_status = 0
+    self.parse_tasks.each do |task|
+      nrpe_tasks << task[:output]
+      nrpe_status = nrpe_status + task[:status].to_i
+    end
+    exit(status)
+  end
 end
+
+
+
 
 # == Do some work now!
 # Use the classes defined above to perform the checks.
+
+# === Set up CLI logging
+@cli_logger = Logger.new(STDOUT)
 
 # === Parse the CLI
 cli_data = ChronosCheckCli.new
 cli_data.parse_options
 
+# Process state file options
 cli_state_file = File.expand_path(cli_data.config[:state_file])
 cli_state_file_age = cli_data.config[:state_file_age].to_i
+
+# Convert the command-line boolean into a proto for Chronos
 if cli_data.config[:proto]
   cli_proto = 'https'
 else
   cli_proto = 'http'
 end
 
-# === Display help if no options are given
-if ARGV.empty?
-  raise cli_data.config[:help]
-end
-
 # === Execute the checks requested by the user.
 exec_check = ChronosCheck.new(cli_data.config[:env], cli_data.config[:config], cli_proto, cli_state_file, cli_state_file_age)
 
+# First update config if requested.
+# TODO: Add options for paths, they are hardcoded for now.
+if cli_data.config[:write_config]
+  @cli_logger.info('TODO: Write nagios config')
+  exec_check.write_nagios_config('~/tmp/commands.cfg', '~/tmp/host.cfg')
+end
+
+# Refresh config and post to Nagios API if requested.
 if cli_data.config[:post_api]
+  @cli_logger.info('Posting check results to Nagios API')
   puts exec_check.post_nagios
 end
 
-if cli_data.config[:write_config]
-  puts 'TODO: Write config'
-end
-
+# Post an individual check result, NRPE-style.
 if cli_data.config[:nagios_check]
-  exec_check.post_nrpe(cli_data.config[:nagios_check])
+  case cli_data.config[:nagios_check]
+    when '*' || 'all'
+      exec_check.post_nrpe_all
+    when 'test-echo'
+      puts 'This is the default check'
+      exec_check.post_nrpe(cli_data.config[:nagios_check])
+    else
+      exec_check.post_nrpe(cli_data.config[:nagios_check])
+  end
 end
