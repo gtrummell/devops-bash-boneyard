@@ -1,6 +1,14 @@
 #!/bin/bash
+set -e
 
 SCRIPT_ARGS=${@}
+
+help_text () {
+    cat <<-EOF
+    Usage:
+    $0 [environment] [role] [ami-id]
+EOF
+}
 
 setup_tools () {
     # Make sure all the OS tools we'll need are installed
@@ -65,11 +73,15 @@ setup_server_name () {
     # Get next available name for this instance
     LATEST_ORDINAL=`knife search node "role:${SERVER_ROLE} AND chef_environment:${ENVIRONMENT}" -F json -a name | jq -r '.rows[][][]' | sed 's/\..*//g' | sed 's/[a-z]//g' | sort -n | tail -n 1`
 
-    if [[ "${LATEST_ORDINAL}" < [1-9] ]]; then
-        RAW_ORDINAL=$((LATEST_ORDINAL + 1))
-        SERVER_ORDINAL="0${RAW_ORDINAL}"
+    if [[ `echo ${LATEST_ORDINAL} | head -c 1` == 0 ]]; then
+        LOW_ORDINAL=`echo ${LATEST_ORDINAL} | tail -c 2`
+        if [[ ${LOW_ORDINAL} == [0-8] ]]; then
+            SERVER_ORDINAL="0$((LOW_ORDINAL + 1))"
+        else
+            SERVER_ORDINAL="10"
+        fi
     else
-        SERVER_ORDINAL=$((LATEST_ORDINAL + 1))
+        SERVER_ORDINAL="$((LATEST_ORDINAL + 1))"
     fi
     SERVER_NAME="${SERVER_ROLE}${SERVER_ORDINAL}.${DOMAIN}"
 }
@@ -264,7 +276,7 @@ setup_ami () {
 
 get_az () {
     # Get availability zones for the configured region.
-    AVAILABILITY_ZONES=`aws ec2 describe-availability-zones | jq -r '.[][].ZoneName'`
+    AVAILABILITY_ZONES=`aws ec2 describe-availability-zones | jq -r '.[][].ZoneName' | grep -v 'us-east-1a'`
 
     # Get all the AZ's in use by our instances of this role in this environment.
     IN_USE_AZS=`knife search node "role:${SERVER_ROLE} AND chef_environment:${ENVIRONMENT}" -F json -a ec2.placement_availability_zone | jq -r '.[][][][]' | sort | uniq`
@@ -279,7 +291,7 @@ get_az () {
         done
 
         # Pick an AZ that doesn't have an instance.
-        if [[ ${THIS_AZ_COUNT} < 1 ]]; then
+        if [[ ${THIS_AZ_COUNT} < 2 ]]; then
             SERVER_AZ="${AVAILABILITY_ZONE}"
         else
             continue
@@ -303,7 +315,7 @@ launch_server () {
     
     # Launch a server into an appropriate AZ
     echo "Launching ${SERVER_ROLE} ${SERVER_NAME} using AMI ${SERVER_AMI} into ${ENVIRONMENT} AZ ${SERVER_AZ}"
-    knife ec2 server create --availability-zone ${SERVER_AZ} --distro chef-full --ebs-size=${EBS_SIZE} --environment ${ENVIRONMENT} --ephemeral /dev/sde --flavor ${FLAVOR} --groups ${SG_LIST} --identity-file ${SSH_KEY} --image ${SERVER_AMI} --node-name ${SERVER_NAME} --run-list ${RUN_LIST} --ssh-key intern --ssh-user ec2-user${CLEAN_ROLE_SWITCHES} --tags \"Name=${SERVER_NAME},Environment=${ENVIRONMENT},Type=${ROLE},Proxy_Role=${ROLE}${CLEAN_ROLE_TAGS}\" --yes
+    knife ec2 server create ${SERVER_NAME} --availability-zone ${SERVER_AZ} --distro chef-full --ebs-size=${EBS_SIZE} --environment ${ENVIRONMENT} --ephemeral /dev/sde --flavor ${FLAVOR} --groups ${SG_LIST} --identity-file ${SSH_KEY} --image ${SERVER_AMI} --node-name ${SERVER_NAME} --run-list ${RUN_LIST} --ssh-key intern --ssh-user ec2-user${CLEAN_ROLE_SWITCHES} --tags \"Name=${SERVER_NAME},Environment=${ENVIRONMENT},Type=${ROLE},Proxy_Role=${ROLE}${CLEAN_ROLE_TAGS}\" --yes
 }
 
 # Do some work!
